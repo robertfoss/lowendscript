@@ -184,6 +184,11 @@ function install_i2p {
     ant tarball
     cd ..
     tar xvf i2p.i2p/i2p.tar.bz2
+    chown -R "$1" "/opt/i2p"
+    chown -R "$1" "/home/$1"
+    chmod +x /opt/i2p/i2prouter
+    chmod +x /opt/i2p/runplain.sh
+    grep -rl "%INSTALL_PATH" i2p/ | xargs sed -i 's/%INSTALL_PATH/\/opt\/i2p/g'
     sed -i "s/wrapper.java.maxmemory=128/wrapper.java.maxmemory=900/g" /opt/i2p/wrapper.config
     cat > "/home/$1/.i2p/router.config" <<END
 i2np.bandwidth.inboundBurstKBytes=143000
@@ -216,9 +221,6 @@ routerconsole.graphPeriods=131040
 routerconsole.graphPersistent=true
 stat.summaries=bw.recvRate.60000,bw.sendRate.60000,router.memoryUsed.60000,router.activePeers.60000,tunnel.participatingTunnels.60000
 END
-
-    chown -R "$1" "/opt/i2p"
-    chown -R "$1" "/home/$1"
 
     cat > /etc/rc.local <<END
 su ${1} -c "/opt/i2p/i2prouter start"
