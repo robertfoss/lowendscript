@@ -459,7 +459,7 @@ system)
     install_git
     install_zsh root
     install_zsh $3
-    install_default-jdk
+    install_jdk
     install_i2p $3
     install_sshd
     install_nano
