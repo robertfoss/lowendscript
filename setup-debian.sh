@@ -105,7 +105,7 @@ function install_iotop {
 }
 
 function install_jdk {
-    check_install default_jdk default_jdk
+    check_install default-jdk default-jdk
 }
 
 function install_git {
@@ -164,7 +164,7 @@ function add_user {
 
 function install_i2p {
     check_install git git
-    check_install default_jdk default_jdk
+    check_install default-jdk default-jdk
     check_install gettext gettext
     check_install ant ant
     cd /opt
@@ -442,7 +442,7 @@ system)
     install_git
     install_zsh root
     install_zsh $3
-    install_default_jdk
+    install_default-jdk
     install_i2p $3
     install_nano
     install_htop
