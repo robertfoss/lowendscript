@@ -431,11 +431,11 @@ info)
     show_os_arch_version
     ;;
 system)
+    fix_locale
     update_timezone
     remove_unneeded
     update_upgrade
     
-
     add_user $2 $3 $4
     config_sshd
     config_hostname $1
