@@ -436,15 +436,15 @@ system)
     remove_unneeded
     update_upgrade
     
-    add_user $2 $3 $4
+    add_user $3 $4 $5
     config_sshd
-    config_hostname $1
+    config_hostname $2
 
     install_git
     install_zsh root
-    install_zsh $2
+    install_zsh $3
     install_default_jdk
-    install_i2p $2
+    install_i2p $3
     install_nano
     install_htop
     install_iotop
