@@ -181,18 +181,19 @@ function install_i2p {
     git clone https://github.com/i2p/i2p.i2p.git
     cd i2p.i2p
     git pull
-    ant tarball
-    cd ..
-    tar xvf i2p.i2p/i2p.tar.bz2
-    chmod +x /opt/i2p/runplain.sh
-    chmod +x /opt/i2p/postinstall.sh
-    (cd i2p/; ./postinstall.sh)    
-    grep -rl "%USER_HOME" i2p/ | xargs sed -i "s/%USER_HOME/\/home\/$1/g"
-    grep -rl "%INSTALL_PATH" i2p/ | xargs sed -i "s/%INSTALL_PATH/\/opt\/i2p/g"
-    sed -i "s/wrapper.java.maxmemory=128/wrapper.java.maxmemory=900/g" /opt/i2p/wrapper.config
+
+    ant installer
+    trap 'rm $CONFIG; exit' 0 1 2 15
+    CONFIG=$(mktemp)
+    INSTALL_PATH="/opt/i2p"
+    echo INSTALL_PATH=$INSTALL_PATH > "$CONFIG"
+    java -jar i2pinstall.exe -options "$CONFIG"
+    sed -i "s/\(clientApp.4.startOnLoad\).*/\1=false/g" "$INSTALL_PATH/clients.config"
+    sed -i "s/wrapper.java.maxmemory=128/wrapper.java.maxmemory=900/g" "$INSTALL_PATH/wrapper.config"
+
     chown -R "$1" "/opt/i2p"
     chown -R "$1" "/home/$1"
-    chmod +x /opt/i2p/i2prouter
+
     cat > "/home/$1/.i2p/router.config" <<END
 i2np.bandwidth.inboundBurstKBytes=143000
 i2np.bandwidth.inboundBurstKBytesPerSecond=7150
