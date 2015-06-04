@@ -168,12 +168,12 @@ function install_i2p {
     check_install gettext gettext
     check_install ant ant
     cd /opt
-    chown -R $1 /opt
     git clone https://github.com/i2p/i2p.i2p.git
     cd i2p.i2p
     ant tarball
     cd ..
     tar xvf i2p.i2p/i2p.tar.bz2
+    chown -R $1 /opt
     sed -i "s/wrapper.java.maxmemory=128/wrapper.java.maxmemory=900/g" wrapper.config
     cat > "/home/$1/.i2p/router.config" <<END
 i2np.bandwidth.inboundBurstKBytes=143000
