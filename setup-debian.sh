@@ -5,86 +5,86 @@
 ############################################################
 
 function check_install {
-	if [ -z "`which "$1" 2>/dev/null`" ]
-	then
-		executable=$1
-		shift
-		while [ -n "$1" ]
-		do
-			DEBIAN_FRONTEND=noninteractive apt-get -q -y install "$1"
-			apt-get clean
-			print_info "$1 installed for $executable"
-			shift
-		done
-	else
-		print_warn "$2 already installed"
-	fi
+    if [ -z "`which "$1" 2>/dev/null`" ]
+    then
+        executable=$1
+        shift
+        while [ -n "$1" ]
+        do
+            DEBIAN_FRONTEND=noninteractive apt-get -q -y install "$1"
+            apt-get clean
+            print_info "$1 installed for $executable"
+            shift
+        done
+    else
+        print_warn "$2 already installed"
+    fi
 }
 
 function check_remove {
-	if [ -n "`which "$1" 2>/dev/null`" ]
-	then
-		DEBIAN_FRONTEND=noninteractive apt-get -q -y remove --purge "$2"
-		apt-get clean
-		print_info "$2 removed"
-	else
-		print_warn "$2 is not installed"
-	fi
+    if [ -n "`which "$1" 2>/dev/null`" ]
+    then
+        DEBIAN_FRONTEND=noninteractive apt-get -q -y remove --purge "$2"
+        apt-get clean
+        print_info "$2 removed"
+    else
+        print_warn "$2 is not installed"
+    fi
 }
 
 function check_sanity {
-	# Do some sanity checking.
-	if [ $(/usr/bin/id -u) != "0" ]
-	then
-		die 'Must be run by root user'
-	fi
+    # Do some sanity checking.
+    if [ $(/usr/bin/id -u) != "0" ]
+    then
+        die 'Must be run by root user'
+    fi
 
-	if [ ! -f /etc/debian_version ]
-	then
-		die "Distribution is not supported"
-	fi
+    if [ ! -f /etc/debian_version ]
+    then
+        die "Distribution is not supported"
+    fi
 }
 
 function die {
-	echo "ERROR: $1" > /dev/null 1>&2
-	exit 1
+    echo "ERROR: $1" > /dev/null 1>&2
+    exit 1
 }
 
 function get_domain_name() {
-	# Getting rid of the lowest part.
-	domain=${1%.*}
-	lowest=`expr "$domain" : '.*\.\([a-z][a-z]*\)'`
-	case "$lowest" in
-	com|net|org|gov|edu|co|me|info|name)
-		domain=${domain%.*}
-		;;
-	esac
-	lowest=`expr "$domain" : '.*\.\([a-z][a-z]*\)'`
-	[ -z "$lowest" ] && echo "$domain" || echo "$lowest"
+    # Getting rid of the lowest part.
+    domain=${1%.*}
+    lowest=`expr "$domain" : '.*\.\([a-z][a-z]*\)'`
+    case "$lowest" in
+    com|net|org|gov|edu|co|me|info|name)
+        domain=${domain%.*}
+        ;;
+    esac
+    lowest=`expr "$domain" : '.*\.\([a-z][a-z]*\)'`
+    [ -z "$lowest" ] && echo "$domain" || echo "$lowest"
 }
 
 function get_password() {
-	# Check whether our local salt is present.
-	SALT=/var/lib/radom_salt
-	if [ ! -f "$SALT" ]
-	then
-		head -c 512 /dev/urandom > "$SALT"
-		chmod 400 "$SALT"
-	fi
-	password=`(cat "$SALT"; echo $1) | md5sum | base64`
-	echo ${password:0:13}
+    # Check whether our local salt is present.
+    SALT=/var/lib/radom_salt
+    if [ ! -f "$SALT" ]
+    then
+        head -c 512 /dev/urandom > "$SALT"
+        chmod 400 "$SALT"
+    fi
+    password=`(cat "$SALT"; echo $1) | md5sum | base64`
+    echo ${password:0:13}
 }
 
 function print_info {
-	echo -n -e '\e[1;36m'
-	echo -n $1
-	echo -e '\e[0m'
+    echo -n -e '\e[1;36m'
+    echo -n $1
+    echo -e '\e[0m'
 }
 
 function print_warn {
-	echo -n -e '\e[1;33m'
-	echo -n $1
-	echo -e '\e[0m'
+    echo -n -e '\e[1;33m'
+    echo -n $1
+    echo -e '\e[0m'
 }
 
 
@@ -93,27 +93,27 @@ function print_warn {
 ############################################################
 
 function install_nano {
-	check_install nano nano
+    check_install nano nano
 }
 
 function install_htop {
-	check_install htop htop
+    check_install htop htop
 }
 
 function install_iotop {
-	check_install iotop iotop
+    check_install iotop iotop
 }
 
 function install_jdk {
-	check_install default_jdk default_jdk
+    check_install default_jdk default_jdk
 }
 
 function install_git {
-	check_install git git
+    check_install git git
 }
 
 function install_git {
-	check_install git git
+    check_install git git
 }
 
 function config_sshd {
@@ -163,12 +163,12 @@ function add_user {
 }
 
 function install_i2p {
-	check_install git git
-	check_install default_jdk default_jdk
-	check_install gettext gettext
-	check_install ant ant
+    check_install git git
+    check_install default_jdk default_jdk
+    check_install gettext gettext
+    check_install ant ant
     cd /opt
-	chown -R $1 .
+    chown -R $1 .
     git clone https://github.com/i2p/i2p.i2p.git
     cd i2p.i2p
     ant tarball
@@ -216,57 +216,57 @@ END
 }
 
 function install_iftop {
-	check_install iftop iftop
-	print_warn "Run IFCONFIG to find your net. device name"
-	print_warn "Example usage: iftop -i venet0"
+    check_install iftop iftop
+    print_warn "Run IFCONFIG to find your net. device name"
+    print_warn "Example usage: iftop -i venet0"
 }
 
 
 function remove_unneeded {
-	# Some Debian have portmap installed. We don't need that.
-	check_remove /sbin/portmap portmap
+    # Some Debian have portmap installed. We don't need that.
+    check_remove /sbin/portmap portmap
 
-	# Remove rsyslogd, which allocates ~30MB privvmpages on an OpenVZ system,
-	# which might make some low-end VPS inoperatable. We will do this even
-	# before running apt-get update.
-	check_remove /usr/sbin/rsyslogd rsyslog
+    # Remove rsyslogd, which allocates ~30MB privvmpages on an OpenVZ system,
+    # which might make some low-end VPS inoperatable. We will do this even
+    # before running apt-get update.
+    check_remove /usr/sbin/rsyslogd rsyslog
 
-	# Other packages that are quite common in standard OpenVZ templates.
-	check_remove /usr/sbin/apache2 'apache2*'
-	check_remove /usr/sbin/named 'bind9*'
-	check_remove /usr/sbin/smbd 'samba*'
-	check_remove /usr/sbin/nscd nscd
+    # Other packages that are quite common in standard OpenVZ templates.
+    check_remove /usr/sbin/apache2 'apache2*'
+    check_remove /usr/sbin/named 'bind9*'
+    check_remove /usr/sbin/smbd 'samba*'
+    check_remove /usr/sbin/nscd nscd
 
-	# Need to stop sendmail as removing the package does not seem to stop it.
-	if [ -f /usr/lib/sm.bin/smtpd ]
-	then
-		invoke-rc.d sendmail stop
-		check_remove /usr/lib/sm.bin/smtpd 'sendmail*'
-	fi
+    # Need to stop sendmail as removing the package does not seem to stop it.
+    if [ -f /usr/lib/sm.bin/smtpd ]
+    then
+        invoke-rc.d sendmail stop
+        check_remove /usr/lib/sm.bin/smtpd 'sendmail*'
+    fi
 }
 
 ############################################################
 # Download ps_mem.py
 ############################################################
 function install_ps_mem {
-	wget http://www.pixelbeat.org/scripts/ps_mem.py -O ~/ps_mem.py
-	chmod 700 ~/ps_mem.py
-	print_info "ps_mem.py has been setup successfully"
-	print_warn "Use ~/ps_mem.py to execute"
+    wget http://www.pixelbeat.org/scripts/ps_mem.py -O ~/ps_mem.py
+    chmod 700 ~/ps_mem.py
+    print_info "ps_mem.py has been setup successfully"
+    print_warn "Use ~/ps_mem.py to execute"
 }
 
 ############################################################
 # Update apt sources (Ubuntu only; not yet supported for debian)
 ############################################################
 function update_apt_sources {
-	codename=`lsb_release --codename | cut -f2`
+    codename=`lsb_release --codename | cut -f2`
 
-	if [ "$codename" == "" ]
-	then
-		die "Unknown Ubuntu flavor $codename"
-	fi
+    if [ "$codename" == "" ]
+    then
+        die "Unknown Ubuntu flavor $codename"
+    fi
 
-	cat > /etc/apt/sources.list <<END
+    cat > /etc/apt/sources.list <<END
 ## main & restricted repositories
 deb http://us.archive.ubuntu.com/ubuntu/ $codename main restricted
 deb-src http://us.archive.ubuntu.com/ubuntu/ $codename main restricted
@@ -288,24 +288,24 @@ deb http://security.ubuntu.com/ubuntu $codename-security universe
 deb-src http://security.ubuntu.com/ubuntu $codename-security universe
 END
 
-	print_info "/etc/apt/sources.list updated for "$codename
+    print_info "/etc/apt/sources.list updated for "$codename
 }
 
 ############################################################
 # Install vzfree (OpenVZ containers only)
 ############################################################
 function install_vzfree {
-	print_warn "build-essential package is now being installed which will take additional diskspace"
-	check_install build-essential build-essential
-	cd ~
-	wget https://github.com/lowendbox/vzfree/archive/master.zip -O vzfree.zip
-	unzip vzfree.zip
-	cd vzfree-master
-	make && make install
-	cd ..
-	vzfree
-	print_info "vzfree has been installed"
-	rm -fr vzfree-master vzfree.zip
+    print_warn "build-essential package is now being installed which will take additional diskspace"
+    check_install build-essential build-essential
+    cd ~
+    wget https://github.com/lowendbox/vzfree/archive/master.zip -O vzfree.zip
+    unzip vzfree.zip
+    cd vzfree-master
+    make && make install
+    cd ..
+    vzfree
+    print_info "vzfree has been installed"
+    rm -fr vzfree-master vzfree.zip
 }
 
 
@@ -313,92 +313,92 @@ function install_vzfree {
 # Configure MOTD at login
 ############################################################
 function configure_motd {
-	apt_clean_all
-	update_upgrade
-	check_install landscape-common landscape-common
-	dpkg-reconfigure landscape-common
+    apt_clean_all
+    update_upgrade
+    check_install landscape-common landscape-common
+    dpkg-reconfigure landscape-common
 }
 
 ############################################################
 # Classic Disk I/O and Network speed tests
 ############################################################
 function runtests {
-	print_info "Classic I/O test"
-	print_info "dd if=/dev/zero of=iotest bs=64k count=16k conv=fdatasync && rm -fr iotest"
-	dd if=/dev/zero of=iotest bs=64k count=16k conv=fdatasync && rm -fr iotest
+    print_info "Classic I/O test"
+    print_info "dd if=/dev/zero of=iotest bs=64k count=16k conv=fdatasync && rm -fr iotest"
+    dd if=/dev/zero of=iotest bs=64k count=16k conv=fdatasync && rm -fr iotest
 
-	print_info "Network test"
-	print_info "wget cachefly.cachefly.net/100mb.test -O 100mb.test && rm -fr 100mb.test"
-	wget cachefly.cachefly.net/100mb.test -O 100mb.test && rm -fr 100mb.test
+    print_info "Network test"
+    print_info "wget cachefly.cachefly.net/100mb.test -O 100mb.test && rm -fr 100mb.test"
+    wget cachefly.cachefly.net/100mb.test -O 100mb.test && rm -fr 100mb.test
 }
 
 ############################################################
 # Print OS summary (OS, ARCH, VERSION)
 ############################################################
 function show_os_arch_version {
-	# Thanks for Mikel (http://unix.stackexchange.com/users/3169/mikel) for the code sample which was later modified a bit
-	# http://unix.stackexchange.com/questions/6345/how-can-i-get-distribution-name-and-version-number-in-a-simple-shell-script
-	ARCH=$(uname -m | sed 's/x86_//;s/i[3-6]86/32/')
+    # Thanks for Mikel (http://unix.stackexchange.com/users/3169/mikel) for the code sample which was later modified a bit
+    # http://unix.stackexchange.com/questions/6345/how-can-i-get-distribution-name-and-version-number-in-a-simple-shell-script
+    ARCH=$(uname -m | sed 's/x86_//;s/i[3-6]86/32/')
 
-	if [ -f /etc/lsb-release ]; then
-		. /etc/lsb-release
-		OS=$DISTRIB_ID
-		VERSION=$DISTRIB_RELEASE
-	elif [ -f /etc/debian_version ]; then
-		# Work on Debian and Ubuntu alike
-		OS=$(lsb_release -si)
-		VERSION=$(lsb_release -sr)
-	elif [ -f /etc/redhat-release ]; then
-		# Add code for Red Hat and CentOS here
-		OS=Redhat
-		VERSION=$(uname -r)
-	else
-		# Pretty old OS? fallback to compatibility mode
-		OS=$(uname -s)
-		VERSION=$(uname -r)
-	fi
+    if [ -f /etc/lsb-release ]; then
+        . /etc/lsb-release
+        OS=$DISTRIB_ID
+        VERSION=$DISTRIB_RELEASE
+    elif [ -f /etc/debian_version ]; then
+        # Work on Debian and Ubuntu alike
+        OS=$(lsb_release -si)
+        VERSION=$(lsb_release -sr)
+    elif [ -f /etc/redhat-release ]; then
+        # Add code for Red Hat and CentOS here
+        OS=Redhat
+        VERSION=$(uname -r)
+    else
+        # Pretty old OS? fallback to compatibility mode
+        OS=$(uname -s)
+        VERSION=$(uname -r)
+    fi
 
-	OS_SUMMARY=$OS
-	OS_SUMMARY+=" "
-	OS_SUMMARY+=$VERSION
-	OS_SUMMARY+=" "
-	OS_SUMMARY+=$ARCH
-	OS_SUMMARY+="bit"
+    OS_SUMMARY=$OS
+    OS_SUMMARY+=" "
+    OS_SUMMARY+=$VERSION
+    OS_SUMMARY+=" "
+    OS_SUMMARY+=$ARCH
+    OS_SUMMARY+="bit"
 
-	print_info "$OS_SUMMARY"
+    print_info "$OS_SUMMARY"
 }
 
 ############################################################
 # Fix locale for OpenVZ Ubuntu templates
 ############################################################
 function fix_locale {
-	check_install multipath-tools multipath-tools
-	export LANGUAGE=en_US.UTF-8
-	export LANG=en_US.UTF-8
-	export LC_ALL=en_US.UTF-8
+    check_install multipath-tools multipath-tools
+    export LANGUAGE=en_US.UTF-8
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
 
-	# Generate locale
-	locale-gen en_US.UTF-8
-	dpkg-reconfigure locales
+    # Generate locale
+    locale-gen en_US.UTF-8
+    dpkg-reconfigure locales
 }
 
 function apt_clean {
-	apt-get -q -y autoclean
-	apt-get -q -y clean
+    apt-get -q -y autoclean
+    apt-get -q -y clean
 }
 
 function update_upgrade {
-	# Run through the apt-get update/upgrade first.
-	# This should be done before we try to install any package
-	apt-get -q -y update
-	apt-get -q -y upgrade
+    # Run through the apt-get update/upgrade first.
+    # This should be done before we try to install any package
+    apt-get -q -y update
+    apt-get -q -y upgrade
 
-	# also remove the orphaned stuff
-	apt-get -q -y autoremove
+    # also remove the orphaned stuff
+    apt-get -q -y autoremove
 }
 
 function update_timezone {
-	dpkg-reconfigure tzdata
+    dpkg-reconfigure tzdata
 }
 
 
@@ -410,63 +410,63 @@ export PATH=/bin:/usr/bin:/sbin:/usr/sbin
 check_sanity
 case "$1" in
 ps_mem)
-	install_ps_mem
-	;;
+    install_ps_mem
+    ;;
 apt)
-	update_apt_sources
-	;;
+    update_apt_sources
+    ;;
 vzfree)
-	install_vzfree
-	;;
+    install_vzfree
+    ;;
 motd)
-	configure_motd
-	;;
+    configure_motd
+    ;;
 locale)
-	fix_locale
-	;;
+    fix_locale
+    ;;
 test)
-	runtests
-	;;
+    runtests
+    ;;
 info)
-	show_os_arch_version
-	;;
+    show_os_arch_version
+    ;;
 system)
-	update_timezone
-	remove_unneeded
-	update_upgrade
+    update_timezone
+    remove_unneeded
+    update_upgrade
     
 
     add_user $2 $3 $4
     config_sshd
     config_hostname $1
 
-	install_git
+    install_git
     install_zsh $2
     install_zsh root
-	install_default_jdk
+    install_default_jdk
     install_i2p
-	install_nano
-	install_htop
-	install_iotop
-	install_iftop
-	
-	apt_clean
-	;;
+    install_nano
+    install_htop
+    install_iotop
+    install_iftop
+    
+    apt_clean
+    ;;
 *)
-	show_os_arch_version
-	echo '  '
-	echo 'Usage:' `basename $0` '[option] [argument]'
-	echo 'Available options (in recomended order):'
-	echo '  - system [hostname] [user] [pass] [ssh_pub_key] (remove unneeded, upgrade system, install software)'
-	echo '  '
-	echo '... and now some extras'
-	echo '  - info                   (Displays information about the OS, ARCH and VERSION)'
-	echo '  - apt                    (update sources.list for UBUNTU only)'
-	echo '  - ps_mem                 (Download the handy python script to report memory usage)'
-	echo '  - vzfree                 (Install vzfree for correct memory reporting on OpenVZ VPS)'
-	echo '  - motd                   (Configures and enables the default MOTD)'
-	echo '  - locale                 (Fix locales issue with OpenVZ Ubuntu templates)'
-	echo '  - test                   (Run the classic disk IO and classic cachefly network test)'
-	echo '  '
-	;;
+    show_os_arch_version
+    echo '  '
+    echo 'Usage:' `basename $0` '[option] [argument]'
+    echo 'Available options (in recomended order):'
+    echo '  - system [hostname] [user] [pass] [ssh_pub_key] (remove unneeded, upgrade system, install software)'
+    echo '  '
+    echo '... and now some extras'
+    echo '  - info                   (Displays information about the OS, ARCH and VERSION)'
+    echo '  - apt                    (update sources.list for UBUNTU only)'
+    echo '  - ps_mem                 (Download the handy python script to report memory usage)'
+    echo '  - vzfree                 (Install vzfree for correct memory reporting on OpenVZ VPS)'
+    echo '  - motd                   (Configures and enables the default MOTD)'
+    echo '  - locale                 (Fix locales issue with OpenVZ Ubuntu templates)'
+    echo '  - test                   (Run the classic disk IO and classic cachefly network test)'
+    echo '  '
+    ;;
 esac
