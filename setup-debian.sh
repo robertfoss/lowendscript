@@ -4,6 +4,18 @@
 # core functions
 ############################################################
 
+function force_install {
+    executable=$1
+    shift
+    while [ -n "$1" ]
+    do
+        DEBIAN_FRONTEND=noninteractive apt-get -q -y install "$1"
+        apt-get clean
+        print_info "$1 installed for $executable"
+        shift
+    done
+}
+
 function check_install {
     if [ -z "`which "$1" 2>/dev/null`" ]
     then
@@ -162,7 +174,7 @@ function add_user {
 function install_i2p {
     check_install git git
     check_install default-jdk default-jdk
-    check_install gettext gettext
+    force_install gettext gettext
     check_install ant ant
     cd /opt
     git clone https://github.com/i2p/i2p.i2p.git
