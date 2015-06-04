@@ -112,7 +112,7 @@ function install_git {
     check_install git git
 }
 
-function config_sshd {
+function install_sshd {
     check_install openssh-server openssh-server
     sed -i "s/#AuthorizedKeysFile/AuthorizedKeysFile/g" wrapper.config
     
@@ -433,7 +433,6 @@ system)
     update_upgrade
     
     add_user $3 $4 $5
-    config_sshd
     config_hostname $2
 
     install_git
@@ -441,6 +440,7 @@ system)
     install_zsh $3
     install_default-jdk
     install_i2p $3
+    install_sshd
     install_nano
     install_htop
     install_iotop
