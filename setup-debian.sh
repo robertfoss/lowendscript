@@ -112,11 +112,8 @@ function install_git {
     check_install git git
 }
 
-function install_git {
-    check_install git git
-}
-
 function config_sshd {
+    check_install openssh-server openssh-server
     sed -i "s/#AuthorizedKeysFile/AuthorizedKeysFile/g" wrapper.config
     
     sed -i "s/#PasswordAuthentication/PasswordAuthentication/g" wrapper.config
