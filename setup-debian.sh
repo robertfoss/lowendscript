@@ -217,14 +217,14 @@ routerconsole.graphPersistent=true
 stat.summaries=bw.recvRate.60000,bw.sendRate.60000,router.memoryUsed.60000,router.activePeers.60000,tunnel.participatingTunnels.60000
 END
 
-    chown -R "$1" "/opt"
-    chown -R "$1" "/home/$1/"
+    chown -R "$1" "/opt/i2p"
+    chown -R "$1" "/home/$1"
 
     cat > /etc/rc.local <<END
 su ${1} -c "/opt/i2p/i2prouter start"
 exit 0
 END
-    su ${1} -c "/opt/i2p/i2prouter start"
+    su "$1" -c "/opt/i2p/i2prouter start"
 }
 
 function install_iftop {
