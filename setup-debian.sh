@@ -92,12 +92,6 @@ function print_warn {
 # applications
 ############################################################
 
-function install_dash {
-	check_install dash dash
-	rm -f /bin/sh
-	ln -s dash /bin/sh
-}
-
 function install_nano {
 	check_install nano nano
 }
@@ -106,12 +100,119 @@ function install_htop {
 	check_install htop htop
 }
 
-function install_mc {
-	check_install mc mc
-}
-
 function install_iotop {
 	check_install iotop iotop
+}
+
+function install_jdk {
+	check_install default_jdk default_jdk
+}
+
+function install_git {
+	check_install git git
+}
+
+function install_git {
+	check_install git git
+}
+
+function config_sshd {
+    sed -i "s/#AuthorizedKeysFile/AuthorizedKeysFile/g" wrapper.config
+    
+    sed -i "s/#PasswordAuthentication/PasswordAuthentication/g" wrapper.config
+    sed -i "s/PasswordAuthentication yes/PasswordAuthentication no/g" wrapper.config
+
+    sed -i "s/#PermitRootLogin/PermitRootLogin/g" wrapper.config
+    sed -i "s/PermitRootLogin yes/PermitRootLogin no/g" wrapper.config
+    
+    service ssh reload
+}
+
+function config_hostname {
+    echo "$1" >> "/etc/hostname"
+    hostname "$1"
+}
+
+function install_zsh {
+    check_install git git
+    check_install zsh zsh
+    chsh -s /bin/zsh "$1"
+    su - "$1" -c "wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O - | sh"
+    cat > "/home/$1/.zshrc" <<END
+export ZSH=\$HOME/.oh-my-zsh
+ZSH_THEME="gentoo"
+export UPDATE_ZSH_DAYS=90
+plugins=(git)
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+source \$ZSH/oh-my-zsh.sh
+alias lg="log --graph --pretty=format:'%Cred%h%Creset - %C(bold blue)%an%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr)' --abbrev-commit"
+alias ll="ls -la"
+export TERM=xterm-256color
+END
+}
+
+
+function add_user {
+    check_install sudo sudo
+    useradd "$1"
+    mkdir -p "/home/$1/.ssh"
+    chown -R $1 "/home/$1"
+    echo "$1:$2" | chpasswd
+    echo "$1 ALL=(ALL:ALL) ALL" >> /etc/sudoers
+    echo "$3" >> "/home/$1/.ssh/authorized_keys"
+}
+
+function install_i2p {
+	check_install git git
+	check_install default_jdk default_jdk
+	check_install gettext gettext
+	check_install ant ant
+    cd /opt
+	chown -R $1 .
+    git clone https://github.com/i2p/i2p.i2p.git
+    cd i2p.i2p
+    ant tarball
+    cd ..
+    tar xvf i2p.i2p/i2p.tar.bz2
+    sed -i "s/wrapper.java.maxmemory=128/wrapper.java.maxmemory=900/g" wrapper.config
+    cat > "/home/$1/.i2p/router.config" <<END
+i2np.bandwidth.inboundBurstKBytes=143000
+i2np.bandwidth.inboundBurstKBytesPerSecond=7150
+i2np.bandwidth.inboundKBytesPerSecond=6500
+i2np.bandwidth.outboundBurstKBytes=143000
+i2np.bandwidth.outboundBurstKBytesPerSecond=7150
+i2np.bandwidth.outboundKBytesPerSecond=6500
+i2np.ntcp.autoip=true
+i2np.ntcp.autoport=false
+i2np.ntcp.enable=true
+i2np.ntcp.maxConnections=8000
+i2np.ntcp.port=18887
+i2np.udp.addressSources=local,upnp,ssu
+i2np.udp.enable=true
+i2np.udp.internalPort=18887
+i2np.udp.maxConnections=8000
+i2np.udp.port=18887
+i2np.upnp.enable=true
+router.floodfillParticipant=true
+router.maxParticipatingTunnels=40000
+router.minThrottleTunnels=40000
+router.sharePercentage=100
+router.updatePolicy=install
+router.updateProxyHost=127.0.0.1
+router.updateProxyPort=4444
+router.updateThroughProxy=true
+routerconsole.graphEvents=false
+routerconsole.graphPeriods=131040
+routerconsole.graphPersistent=true
+stat.summaries=bw.recvRate.60000,bw.sendRate.60000,router.memoryUsed.60000,router.activePeers.60000,tunnel.participatingTunnels.60000
+
+END
+
+    cat > /etc/rc.local <<END
+su ${1} -c "/opt/i2p/i2prouter start"
+exit 0
+END
+    su ${1} -c "/opt/i2p/i2prouter start"
 }
 
 function install_iftop {
@@ -120,675 +221,6 @@ function install_iftop {
 	print_warn "Example usage: iftop -i venet0"
 }
 
-function install_vim {
-	check_install vim vim
-}
-
-function install_dropbear {
-	if [ -z "$1" ]
-	then
-		die "Usage: `basename $0` dropbear [ssh-port-#]"
-	fi
-
-	check_install dropbear dropbear
-	check_install /usr/sbin/xinetd xinetd
-
-	# Disable SSH
-	touch /etc/ssh/sshd_not_to_be_run
-	invoke-rc.d ssh stop
-
-	# Enable dropbear to start. We are going to use xinetd as it is just
-	# easier to configure and might be used for other things.
-	cat > /etc/xinetd.d/dropbear <<END
-service ssh
-{
-	socket_type  = stream
-	only_from    = 0.0.0.0
-	wait         = no
-	user         = root
-	protocol     = tcp
-	server       = /usr/sbin/dropbear
-	server_args  = -i
-	disable      = no
-	port         = $1
-	type         = unlisted
-}
-END
-	invoke-rc.d xinetd restart
-
-	print_info "dropbear is installed and running"
-}
-
-function install_exim4 {
-	check_install mail exim4
-	if [ -f /etc/exim4/update-exim4.conf.conf ]
-	then
-		sed -i \
-			"s/dc_eximconfig_configtype='local'/dc_eximconfig_configtype='internet'/" \
-			/etc/exim4/update-exim4.conf.conf
-		invoke-rc.d exim4 restart
-	fi
-}
-
-function install_dotdeb {
-	# Debian version 6.x.x
-	if grep ^6. /etc/debian_version > /dev/null
-	then
-		echo "deb http://packages.dotdeb.org squeeze all" >> /etc/apt/sources.list
-		echo "deb-src http://packages.dotdeb.org squeeze all" >> /etc/apt/sources.list
-	fi
-
-	# Debian version 7.x.x
-	if grep ^7. /etc/debian_version > /dev/null
-	then
-		echo "deb http://packages.dotdeb.org wheezy all" >> /etc/apt/sources.list
-		echo "deb-src http://packages.dotdeb.org wheezy all" >> /etc/apt/sources.list
-	fi
-
-	wget -q -O - http://www.dotdeb.org/dotdeb.gpg | apt-key add -
-}
-
-function install_syslogd {
-	# We just need a simple vanilla syslogd. Also there is no need to log to
-	# so many files (waste of fd). Just dump them into
-	# /var/log/(cron/mail/messages)
-	check_install /usr/sbin/syslogd inetutils-syslogd
-	invoke-rc.d inetutils-syslogd stop
-
-	for file in /var/log/*.log /var/log/mail.* /var/log/debug /var/log/syslog
-	do
-		[ -f "$file" ] && rm -f "$file"
-	done
-	for dir in fsck news
-	do
-		[ -d "/var/log/$dir" ] && rm -rf "/var/log/$dir"
-	done
-
-	cat > /etc/syslog.conf <<END
-*.*;mail.none;cron.none -/var/log/messages
-cron.*				  -/var/log/cron
-mail.*				  -/var/log/mail
-END
-
-	[ -d /etc/logrotate.d ] || mkdir -p /etc/logrotate.d
-	cat > /etc/logrotate.d/inetutils-syslogd <<END
-/var/log/cron
-/var/log/mail
-/var/log/messages {
-	rotate 4
-	weekly
-	missingok
-	notifempty
-	compress
-	sharedscripts
-	postrotate
-		/etc/init.d/inetutils-syslogd reload >/dev/null
-	endscript
-}
-END
-
-	invoke-rc.d inetutils-syslogd start
-}
-
-function install_mysql {
-
-	# Install the MySQL packages
-	check_install mysqld mysql-server
-	check_install mysql mysql-client
-
-	# Install a low-end copy of the my.cnf to disable InnoDB
-	invoke-rc.d mysql stop
-	cat > /etc/mysql/conf.d/lowendbox.cnf <<END
-# These values override values from /etc/mysql/my.cnf
-
-[mysqld]
-key_buffer = 12M
-query_cache_limit = 256K
-query_cache_size = 4M
-
-init_connect='SET collation_connection = utf8_unicode_ci'
-init_connect='SET NAMES utf8' 
-character-set-server = utf8 
-collation-server = utf8_unicode_ci 
-skip-character-set-client-handshake
-
-default_tmp_storage_engine = MyISAM  #  -----  added for newer versions of mysql
-default_storage_engine = MyISAM
-skip-innodb
-
-#log-slow-queries=/var/log/mysql/slow-queries.log  --- error in newer versions of mysql
-
-[client]
-default-character-set = utf8
-END
-	invoke-rc.d mysql start
-
-	# Generating a new password for the root user.
-	passwd=`get_password root@mysql`
-	mysqladmin password "$passwd"
-	cat > ~/.my.cnf <<END
-[client]
-user = root
-password = $passwd
-END
-	chmod 600 ~/.my.cnf
-}
-
-function install_php {
-	# PHP core
-	check_install php5-fpm php5-fpm
-	check_install php5-cli php5-cli
-
-	# PHP modules
-	DEBIAN_FRONTEND=noninteractive apt-get -y install php5-apc php5-suhosin php5-curl php5-gd php5-intl php5-mcrypt php-gettext php5-mysql php5-sqlite
-
-	echo 'Using PHP-FPM to manage PHP processes'
-	echo ' '
-
-        print_info "Taking configuration backups in /root/bkps; you may keep or delete this directory"
-        mkdir /root/bkps
-	mv /etc/php5/conf.d/apc.ini /root/bkps/apc.ini
-
-cat > /etc/php5/conf.d/apc.ini <<END
-[APC]
-extension=apc.so
-apc.enabled=1
-apc.shm_segments=1
-apc.shm_size=32M
-apc.ttl=7200
-apc.user_ttl=7200
-apc.num_files_hint=1024
-apc.mmap_file_mask=/tmp/apc.XXXXXX
-apc.max_file_size = 1M
-apc.post_max_size = 1000M
-apc.upload_max_filesize = 1000M
-apc.enable_cli=0
-apc.rfc1867=0
-END
-
-	mv /etc/php5/conf.d/suhosin.ini /root/bkps/suhosin.ini
-
-cat > /etc/php5/conf.d/suhosin.ini <<END
-; configuration for php suhosin module
-extension=suhosin.so
-suhosin.executor.include.whitelist="phar"
-suhosin.request.max_vars = 2048
-suhosin.post.max_vars = 2048
-suhosin.request.max_array_index_length = 256
-suhosin.post.max_array_index_length = 256
-suhosin.request.max_totalname_length = 8192
-suhosin.post.max_totalname_length = 8192
-suhosin.sql.bailout_on_error = Off
-END
-
-	if [ -f /etc/php5/fpm/php.ini ]
-		then
-			sed -i \
-				"s/upload_max_filesize = 2M/upload_max_filesize = 256M/" \
-				/etc/php5/fpm/php.ini
-			sed -i \
-				"s/post_max_size = 8M/post_max_size = 256M/" \
-				/etc/php5/fpm/php.ini
-	fi
-
-	invoke-rc.d php5-fpm restart
-
-}
-
-function install_nginx {
-
-	check_install nginx nginx
-
-	mkdir -p /var/www
-
-	# PHP-safe default vhost
-	cat > /etc/nginx/sites-available/default_php <<END
-# Creates unlimited domains for PHP sites as long as you add the
-# entry to /etc/hosts and create the matching \$host folder.
-server {
-	listen 80 default;
-	server_name _;
-	root /var/www/\$host/public;
-	index index.html index.htm index.php;
-
-	# Directives to send expires headers and turn off 404 error logging.
-	location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
-		expires max;
-		log_not_found off;
-		access_log off;
-	}
-
-	location = /favicon.ico {
-		log_not_found off;
-		access_log off;
-	}
-
-	location = /robots.txt {
-		allow all;
-		log_not_found off;
-		access_log off;
-	}
-
-	## Disable viewing .htaccess & .htpassword
-	location ~ /\.ht {
-		deny  all;
-	}
-
-	include /etc/nginx/php.conf;
-}
-END
-
-	# MVC frameworks with only a single index.php entry point (nginx > 0.7.27)
-	cat > /etc/nginx/php.conf <<END
-# Route all requests for non-existent files to index.php
-location / {
-	try_files \$uri \$uri/ /index.php\$is_args\$args;
-}
-
-# Pass PHP scripts to php-fastcgi listening on port 9000
-location ~ \.php$ {
-
-	# Zero-day exploit defense.
-	# http://forum.nginx.org/read.php?2,88845,page=3
-	# Won't work properly (404 error) if the file is not stored on
-	# this server,  which is entirely possible with php-fpm/php-fcgi.
-	# Comment the 'try_files' line out if you set up php-fpm/php-fcgi
-	# on another machine.  And then cross your fingers that you won't get hacked.
-	try_files \$uri =404;
-
-	include fastcgi_params;
-
-	# Keep these parameters for compatibility with old PHP scripts using them.
-	fastcgi_param PATH_INFO \$fastcgi_path_info;
-	fastcgi_param PATH_TRANSLATED \$document_root\$fastcgi_path_info;
-	fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
-
-	# Some default config
-	fastcgi_connect_timeout        20;
-	fastcgi_send_timeout          180;
-	fastcgi_read_timeout          180;
-	fastcgi_buffer_size          128k;
-	fastcgi_buffers            4 256k;
-	fastcgi_busy_buffers_size    256k;
-	fastcgi_temp_file_write_size 256k;
-	fastcgi_intercept_errors    on;
-	fastcgi_ignore_client_abort off;
-	fastcgi_pass 127.0.0.1:9000;
-
-}
-# PHP search for file Exploit:
-# The PHP regex location block fires instead of the try_files block. Therefore we need
-# to add "try_files \$uri =404;" to make sure that "/uploads/virusimage.jpg/hello.php"
-# never executes the hidden php code inside virusimage.jpg because it can't find hello.php!
-# The exploit also can be stopped by adding "cgi.fix_pathinfo = 0" in your php.ini file.
-END
-
-	# remove localhost-config
-	rm -f /etc/nginx/sites-enabled/default
-
-	echo 'Created /etc/nginx/php.conf for PHP sites'
-	echo 'Created /etc/nginx/sites-available/default_php sample vhost'
-	echo ' '
-
- if [ -f /etc/nginx/sites-available/default ]
-	then
-		# Made IPV6 Listener not conflict and throw errors
-		sed -i \
-			"s/listen \[::]:80 default_server;/listen [::]:80 default_server ipv6only=on;/" \
-			/etc/nginx/sites-available/default
- fi
-
- if [ -f /etc/nginx/nginx.conf ]
-	then
-		# one worker for each CPU and max 1024 connections/worker
-		cpu_count=`grep -c ^processor /proc/cpuinfo`
-		sed -i \
-			"s/worker_processes [0-9]*;/worker_processes $cpu_count;/" \
-			/etc/nginx/nginx.conf
-		sed -i \
-			"s/worker_connections [0-9]*;/worker_connections 1024;/" \
-			/etc/nginx/nginx.conf
-		# Enable advanced compression
-		sed -i \
-			"s/# gzip_/gzip_/g" \
-			/etc/nginx/nginx.conf
- fi
-
-	# restart nginx
-	invoke-rc.d nginx restart
-}
-
-function install_site {
-
-	if [ -z "$1" ]
-	then
-		die "Usage: `basename $0` site [domain]"
-	fi
-
-	# Setup folder
-	mkdir /var/www/$1
-	mkdir /var/www/$1/public
-
-	# Setup default index.html file
-	cat > "/var/www/$1/public/index.html" <<END
-Hello World
-END
-
-	# Setup test phpinfo.php file
-	echo "<?php phpinfo(); ?>" > /var/www/$1/public/phpinfo.php
-	chown www-data:www-data "/var/www/$1/public/phpinfo.php"
-
-	# Setting up Nginx mapping
-	cat > "/etc/nginx/sites-available/$1.conf" <<END
-server {
-	listen 80;
-	server_name www.$1 $1;
-	root /var/www/$1/public;
-	index index.html index.htm index.php;
-	client_max_body_size 32m;
-
-	access_log  /var/www/$1/access.log;
-	error_log  /var/www/$1/error.log;
-
-	# Directives to send expires headers and turn off 404 error logging.
-	location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
-		expires max;
-		log_not_found off;
-		access_log off;
-	}
-
-	location = /favicon.ico {
-		log_not_found off;
-		access_log off;
-	}
-
-	location = /robots.txt {
-		allow all;
-		log_not_found off;
-		access_log off;
-	}
-
-	## Disable viewing .htaccess & .htpassword
-	location ~ /\.ht {
-		deny  all;
-	}
-
-	include /etc/nginx/php.conf;
-}
-END
-	# Create the link so nginx can find it
-	ln -s /etc/nginx/sites-available/$1.conf /etc/nginx/sites-enabled/$1.conf
-
-	# PHP/Nginx needs permission to access this
-	chown www-data:www-data -R "/var/www/$1"
-
-	invoke-rc.d nginx restart
-
-	print_warn "New site successfully installed."
-	print_warn "You may can test PHP functionality by accessing $1/phpinfo.php"
-}
-
-function install_wordpress {
-
-	if [ -z "$1" ]
-	then
-		die "Usage: `basename $0` wordpress [domain]"
-	fi
-
-	# Setup folder
-	mkdir /var/www/$1
-	mkdir /var/www/$1/public
-
-	# Downloading the WordPress' latest and greatest distribution.
-    mkdir /tmp/wordpress.$$
-    wget -O - http://wordpress.org/latest.tar.gz | \
-        tar zxf - -C /tmp/wordpress.$$
-    cp -a /tmp/wordpress.$$/wordpress/. "/var/www/$1/public"
-    rm -rf /tmp/wordpress.$$
-
-	# Setting up the MySQL database
-    dbname=`echo $1 | tr . _`
-	echo Database Name = 'echo $1 | tr . _'
-    userid=`get_domain_name $1`
-    # MySQL userid cannot be more than 15 characters long
-    userid="${userid:0:15}"
-    passwd=`get_password "$userid@mysql"`
-	# Write wp.config file
-    cp "/var/www/$1/public/wp-config-sample.php" "/var/www/$1/public/wp-config.php"
-	salt=$(curl -L https://api.wordpress.org/secret-key/1.1/salt/)
-	defineString='put your unique phrase here'
-	printf '%s\n' "g/$defineString/d" a "$salt" . w | ed -s /var/www/$1/public/wp-config.php
-    sed -i "s/database_name_here/$dbname/; s/username_here/$userid/; s/password_here/$passwd/" \
-        "/var/www/$1/public/wp-config.php"
-
-		cat > "/var/www/$1/mysql.conf" <<END
-[mysql]
-user = $userid
-password = $passwd
-database = $dbname
-END
-	chmod 600 "/var/www/$1/mysql.conf"
-
-    mysqladmin create "$dbname"
-    echo "GRANT ALL PRIVILEGES ON \`$dbname\`.* TO \`$userid\`@localhost IDENTIFIED BY '$passwd';" | \
-        mysql
-
-	# Setting up Nginx mapping
-	cat > "/etc/nginx/sites-available/$1.conf" <<END
-server {
-	listen 80;
-	server_name www.$1 $1;
-	root /var/www/$1/public;
-	index index.php;
-
-	access_log  /var/www/$1/access.log;
-	error_log  /var/www/$1/error.log;
-
-	# unless the request is for a valid file, send to bootstrap
-	if (!-e \$request_filename)
-    {
-	    rewrite ^(.+)$ /index.php?q=$1 last;
-    }
- 
-    # catch all
-    error_page 404 /index.php;
-
-    # Directives to send expires headers and turn off 404 error logging.
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
-        expires max;
-        log_not_found off;
-        access_log off;
-    }
-
-    location = /favicon.ico {
-        log_not_found off;
-        access_log off;
-    }
-
-    location = /robots.txt {
-        allow all;
-        log_not_found off;
-        access_log off;
-    }
-
-    ## Disable viewing .htaccess & .htpassword
-    location ~ /\.ht {
-        deny  all;
-    }
-
-    location / {
-                # This is cool because no php is touched for static content. 
-                # include the "?\$args" part so non-default permalinks doesn't break when using query string
-                try_files \$uri \$uri/ /index.php?\$args;
-        }
-
-    # use fastcgi for all php files
-    location ~ \.php$
-    {
-        try_files \$uri =404;
-
-        fastcgi_pass 127.0.0.1:9000;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME /var/www/$1/public\$fastcgi_script_name;
-        include fastcgi_params;
-
-        # Some default config
-        fastcgi_connect_timeout        20;
-        fastcgi_send_timeout          180;
-        fastcgi_read_timeout          180;
-        fastcgi_buffer_size          128k;
-        fastcgi_buffers            4 256k;
-        fastcgi_busy_buffers_size    256k;
-        fastcgi_temp_file_write_size 256k;
-        fastcgi_intercept_errors    on;
-        fastcgi_ignore_client_abort off;
-
-    }
-
-}
-
-
-END
-	# Create the link so nginx can find it
-	ln -s /etc/nginx/sites-available/$1.conf /etc/nginx/sites-enabled/$1.conf
-
-	# PHP/Nginx needs permission to access this
-	chown www-data:www-data -R "/var/www/$1"
-
-	invoke-rc.d nginx restart
-
-	print_warn "New wordpress site successfully installed."
-}
-
-function install_mysqluser {
-
-	if [ -z "$1" ]
-	then
-		die "Usage: `basename $0` mysqluser [domain]"
-	fi
-
-	if [ ! -d "/var/www/$1/" ]
-	then
-		echo "no site found at /var/www/$1/"
-		exit
-	fi
-
-	# Setting up the MySQL database
-	dbname=`echo $1 | tr . _`
-	userid=`get_domain_name $1`
-	# MySQL userid cannot be more than 15 characters long
-	userid="${userid:0:15}"
-	passwd=`get_password "$userid@mysql"`
-
-	cat > "/var/www/$1/mysql.conf" <<END
-[mysql]
-user = $userid
-password = $passwd
-database = $dbname
-END
-	chmod 600 "/var/www/$1/mysql.conf"
-
-	mysqladmin create "$dbname"
-	echo "GRANT ALL PRIVILEGES ON \`$dbname\`.* TO \`$userid\`@localhost IDENTIFIED BY '$passwd';" | \
-		mysql
-
-	# We could also add these...
-	#echo "DROP USER '$userid'@'localhost';" | \ mysql
-	#echo "DROP DATABASE IF EXISTS  `$dbname` ;" | \ mysql
-
-	echo 'MySQL Username: ' $userid
-	echo 'MySQL Password: ' $passwd
-	echo 'MySQL Database: ' $dbname
-}
-
-
-function install_iptables {
-
-	check_install iptables iptables
-
-	if [ -z "$1" ]
-	then
-		die "Usage: `basename $0` iptables [ssh-port-#]"
-	fi
-
-	# Create startup rules
-	cat > /etc/iptables.up.rules <<END
-*filter
-
-# http://articles.slicehost.com/2010/4/30/ubuntu-lucid-setup-part-1
-
-#  Allows all loopback (lo0) traffic and drop all traffic to 127/8 that doesn't use lo0
--A INPUT -i lo -j ACCEPT
--A INPUT ! -i lo -d 127.0.0.0/8 -j REJECT
-
-#  Accepts all established inbound connections
--A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-
-#  Allows all outbound traffic
-#  You can modify this to only allow certain traffic
--A OUTPUT -j ACCEPT
-
-# Allows HTTP and HTTPS connections from anywhere (the normal ports for websites)
--A INPUT -p tcp --dport 80 -j ACCEPT
--A INPUT -p tcp --dport 443 -j ACCEPT
-
-# UN-COMMENT THESE IF YOU USE INCOMING MAIL!
-
-# Allows POP (and SSL-POP)
-#-A INPUT -p tcp --dport 110 -j ACCEPT
-#-A INPUT -p tcp --dport 995 -j ACCEPT
-
-# SMTP (and SSMTP)
-#-A INPUT -p tcp --dport 25 -j ACCEPT
-#-A INPUT -p tcp --dport 465 -j ACCEPT
-
-# IMAP (and IMAPS)
-#-A INPUT -p tcp --dport 143 -j ACCEPT
-#-A INPUT -p tcp --dport 993 -j ACCEPT
-
-#  Allows SSH connections (only 3 attempts by an IP every minute, drop the rest to prevent SSH attacks)
--A INPUT -p tcp -m tcp --dport $1 -m state --state NEW -m recent --set --name DEFAULT --rsource
--A INPUT -p tcp -m tcp --dport $1 -m state --state NEW -m recent --update --seconds 60 --hitcount 3 --name DEFAULT --rsource -j DROP
--A INPUT -p tcp -m state --state NEW --dport $1 -j ACCEPT
-
-# Allow ping
--A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
-
-# log iptables denied calls (Can grow log files fast!)
-#-A INPUT -m limit --limit 5/min -j LOG --log-prefix "iptables denied: " --log-level 7
-
-# Misc
-
-# Reject all other inbound - default deny unless explicitly allowed policy
-#-A INPUT -j REJECT
-#-A FORWARD -j REJECT
-
-# It's safer to just DROP the packet
--A INPUT -j DROP
--A FORWARD -j DROP
-
-COMMIT
-END
-
-	# Set these rules to load on startup
-	cat > /etc/network/if-pre-up.d/iptables <<END
-#!/bin/sh
-/sbin/iptables-restore < /etc/iptables.up.rules
-END
-
-	# Make it executable
-	chmod +x /etc/network/if-pre-up.d/iptables
-
-	# Load the rules
-	iptables-restore < /etc/iptables.up.rules
-
-	# You can flush the current rules with /sbin/iptables -F
-	echo 'Created /etc/iptables.up.rules and startup script /etc/network/if-pre-up.d/iptables'
-	echo 'If you make changes you can restore the rules with';
-	echo '/sbin/iptables -F'
-	echo 'iptables-restore < /etc/iptables.up.rules'
-	echo ' '
-}
 
 function remove_unneeded {
 	# Some Debian have portmap installed. We don't need that.
@@ -876,48 +308,6 @@ function install_vzfree {
 	rm -fr vzfree-master vzfree.zip
 }
 
-############################################################
-# Install Webmin
-############################################################
-function install_webmin {
-	print_warn "Make sure you have update the apt file first RUN 'bash `basename $0` apt' to update the /etc/apt/sources.list"
-
-	print_info "Installing required packages"
-	check_install perl perl
-	check_install libnet-ssleay-perl libnet-ssleay-perl
-	check_install openssl openssl
-	check_install libauthen-pam-perl libauthen-pam-perl
-	check_install libpam-runtime libpam-runtime
-	check_install libio-pty-perl libio-pty-perl
-	check_install libapt-pkg-perl libapt-pkg-perl
-	check_install apt-show-versions apt-show-versions
-
-	# Making sure there are no other dependancies left
-	apt-get upgrade -q -y -f
-
-	# Download and install Webmin
-	print_info "Downloading Webmin"
-	wget http://www.webmin.com/download/deb/webmin-current.deb -O /tmp/webmin.deb
-	print_info "Installing webmin ..."
-	dpkg -i /tmp/webmin.deb
-	rm -fr /tmp/webmin.deb
-	print_warn "Special Note: If the installation ends with an error, please run it again"
-}
-
-############################################################
-# Generate SSH Key
-############################################################
-function gen_ssh_key {
-	print_warn "Generating the ssh-key (1024 bit)"
-	if [ -z "$1" ]
-	then
-		ssh-keygen -t dsa -b 1024 -f ~/id_rsa
-		print_warn "generated ~/id_rsa"
-	else
-		ssh-keygen -t dsa -b 1024 -f ~/"$1"
-		print_warn "generated ~/$1"
-	fi
-}
 
 ############################################################
 # Configure MOTD at login
@@ -1012,187 +402,6 @@ function update_timezone {
 }
 
 
-############################################################
-# Install 3proxy (version 0.6.1, perfect proxy for LEB, supports authentication, easy config)
-############################################################
-function install_3proxy {
-
-	if [ -z "$1" ]
-	then
-		die "Usage: `basename $0` 3proxy [http-proxy port #]"
-	fi
-        echo "You have chosen port $http_porty"
-	# Build 3proxy
-	echo "Downloading and building 3proxy"
-	mkdir /tmp/proxy
-	cd /tmp/proxy
-	wget http://www.3proxy.ru/0.6.1/3proxy-0.6.1.tgz
-	tar -xvzf 3proxy-0.6.1.tgz
-	rm 3proxy-0.6.1.tgz
-	cd 3proxy-0.6.1
-	apt-get install build-essential
-	make -f Makefile.Linux
-	
-	# Navigate to 3proxy Install Directory
-	cd src
-	mkdir /etc/3proxy/
-	
-	# Move 3proxy program to a non-temporary location and navigate there
-	mv 3proxy /etc/3proxy/
-	cd /etc/3proxy/
-	
-	# Create a Log File
-	touch /var/log/3proxy.log
-	
-	# Create basic config that sets up HTTP proxy with user authentication
-	touch /etc/3proxy/3proxy.cfg
-	
-	cat > "/etc/3proxy/3proxy.cfg" <<END
-# Specify valid name servers. You can locate them on your VPS in /etc/resolv.conf
-#
-nserver 8.8.8.8
-nserver 8.8.4.4
-# Leave default cache size for DNS requests:
-#
-nscache 65536
-# Leave default timeout as well:
-#
-timeouts 1 5 30 60 180 1800 15 60
-# If your server has several IP-addresses, you need to provide an external one
-# Alternatively, you may ignore this line
-#external YOURSEVERIP
-# Provide the IP-address to be listened
-# If you ignore this line, proxy will listen all the server.s IP-addresses
-#internal YOURSEVERIP
-# Create users proxyuser1 and proxyuser2 and specify a password
-#
-users \$/etc/3proxy/.proxyauth
-# Specify daemon as a start mode
-#
-daemon
-# and the path to logs, and log format. Creation date will be added to a log name
-log /var/log/3proxy.log
-logformat "- +_L%t.%. %N.%p %E %U %C:%c %R:%r %O %I %h %T"
-# Compress the logs using gzip
-#
-archiver gz /usr/bin/gzip %F
-# store the logs for 30 days
-rotate 30
-# Configuring http(s) proxy
-#
-# enable strong authorization. To disable authentication, simply change to 'auth none'
-# added authentication caching to make life easier
-authcache user 60
-auth strong cache
-# and restrict access for ports via http(s)-proxy and deny access to local interfaces
-#
-deny * * 127.0.0.1,192.168.1.1
-allow * * * 80-88,8080-8088 HTTP
-allow * * * 443,8443 HTTPS
-# run http-proxy ... without ntlm-authorization, complete anonymity and port ...
-#
-proxy -n -p$1 -a
-# Configuring socks5-proxy
-#
-# enable strong authorization and authentication caching
-#
-# Purge the access-list of http-proxy and allow certain users
-#
-# set the maximum number of simultaneous connections to 32
-#authcache user 60
-#auth strong cache
-#flush
-#allow userdefined
-#socks
-END
-	
-	# Give appropriate permissions for config file
-	chmod 600 /etc/3proxy/3proxy.cfg
-	
-	# Create external user authentication file
-	touch /etc/3proxy/.proxyauth
-	chmod 600 /etc/3proxy/.proxyauth 
-	cat > "/etc/3proxy/.proxyauth" <<END
-## addusers in this format:
-## user:CL:password
-## see for documenation:  http://www.3proxy.ru/howtoe.asp#USERS
-END
-	
-	# Create initialization scripty so 3proxy starts with system
-	touch /etc/init.d/3proxy
-	chmod  +x /etc/init.d/3proxy
-	cat > "/etc/init.d/3proxy" <<END
-#!/bin/sh
-#
-# chkconfig: 2345 20 80
-# description: 3proxy tiny proxy server
-#
-#
-#
-#
-
-case "\$1" in
-   start)
-       echo Starting 3Proxy
-
-       /etc/3proxy/3proxy /etc/3proxy/3proxy.cfg
-       ;;
-
-   stop)
-       echo Stopping 3Proxy
-       /usr/bin/killall 3proxy
-       ;;
-
-   restart|reload)
-       echo Reloading 3Proxy
-       /usr/bin/killall -s USR1 3proxy
-       ;;
-   *)
-       echo Usage: \$0 "{start|stop|restart}"
-       exit 1
-esac
-exit 0
-
-END
-
-	# Make sure 3proxy starts with system
-
-	update-rc.d 3proxy defaults	
-
-	# Add Iptable entry for specified port
-	echo "Adding necessary Iptable entry"
-	iptables -I INPUT -p tcp --dport $1 -j ACCEPT
-	if [ -f /etc/iptables.up.rules ];
-	then
-	iptables-save < /etc/iptables.up.rules
-	fi
-	echo ''
-	echo '3proxy successfully installed, before you can use it you must add a user and password, for proxy authentication. ' 
-	echo 'This can be done using the "3proxyauth [user] [password]" it will add the user to the 3proxy auth file. '
-	echo 'If you do not want authentication, edit the 3proxy config file /etc/3proxy/3proxy.cfg  and set authentication to none (auth none)'
-	echo 'This will leave your http proxy open to anyone and everyone.'
-	
-	/etc/init.d/3proxy start
-	
-	echo "3proxy started"
-}
-
-function 3proxyauth {
-
-	if [[ -z "$1" || -z "$2" ]]
-	then
-		die "Usage: `basename $0` 3proxyauth username password"
-	fi
-	
-	if [ -f /etc/3proxy/.proxyauth ];
-	then
-	echo "$1:CL:$2" >> "/etc/3proxy/.proxyauth"
-	echo "User: $1 successfully added"
-	else
-	echo "Please install 3proxy (through this script) first."
-	fi
-
-}
 ######################################################################## 
 # START OF PROGRAM
 ########################################################################
@@ -1200,42 +409,6 @@ export PATH=/bin:/usr/bin:/sbin:/usr/sbin
 
 check_sanity
 case "$1" in
-mysql)
-	install_mysql
-	;;
-exim4)
-	install_exim4
-	;;
-nginx)
-	install_nginx
-	;;
-php)
-	install_php
-	;;
-dotdeb)
-	install_dotdeb
-	;;
-site)
-	install_site $2
-	;;
-wordpress)
-	install_wordpress $2
-	;;
-mysqluser)
-	install_mysqluser $2
-	;;
-iptables)
-	install_iptables $2
-	;;
-dropbear)
-	install_dropbear $2
-	;;
-3proxy)
-	install_3proxy $2
-	;;
-3proxyauth)
-	3proxyauth $2 $3
-	;;	
 ps_mem)
 	install_ps_mem
 	;;
@@ -1244,12 +417,6 @@ apt)
 	;;
 vzfree)
 	install_vzfree
-	;;
-webmin)
-	install_webmin
-	;;
-sshkey)
-	gen_ssh_key $2
 	;;
 motd)
 	configure_motd
@@ -1267,14 +434,22 @@ system)
 	update_timezone
 	remove_unneeded
 	update_upgrade
-	install_dash
-	install_vim
+    
+
+    add_user $2 $3 $4
+    config_sshd
+    config_hostname $1
+
+	install_git
+    install_zsh $2
+    install_zsh root
+	install_default_jdk
+    install_i2p
 	install_nano
 	install_htop
-	install_mc
 	install_iotop
 	install_iftop
-	install_syslogd
+	
 	apt_clean
 	;;
 *)
@@ -1282,30 +457,16 @@ system)
 	echo '  '
 	echo 'Usage:' `basename $0` '[option] [argument]'
 	echo 'Available options (in recomended order):'
-	echo '  - dotdeb                 (install dotdeb apt source for nginx 1.2+)'
-	echo '  - system                 (remove unneeded, upgrade system, install software)'
-	echo '  - dropbear  [port]       (SSH server)'
-	echo '  - iptables  [port]       (setup basic firewall with HTTP(S) open)'
-	echo '  - mysql                  (install MySQL and set root password)'
-	echo '  - nginx                  (install nginx and create sample PHP vhosts)'
-	echo '  - php                    (install PHP5-FPM with APC, cURL, suhosin, etc...)'
-	echo '  - exim4                  (install exim4 mail server)'
-	echo '  - site      [domain.tld] (create nginx vhost and /var/www/$site/public)'
-	echo '  - mysqluser [domain.tld] (create matching mysql user and database)'
-	echo '  - wordpress [domain.tld] (create nginx vhost and /var/www/$wordpress/public)'
+	echo '  - system [hostname] [user] [pass] [ssh_pub_key] (remove unneeded, upgrade system, install software)'
 	echo '  '
 	echo '... and now some extras'
 	echo '  - info                   (Displays information about the OS, ARCH and VERSION)'
-	echo '  - sshkey                 (Generate SSH key)'
 	echo '  - apt                    (update sources.list for UBUNTU only)'
 	echo '  - ps_mem                 (Download the handy python script to report memory usage)'
 	echo '  - vzfree                 (Install vzfree for correct memory reporting on OpenVZ VPS)'
 	echo '  - motd                   (Configures and enables the default MOTD)'
 	echo '  - locale                 (Fix locales issue with OpenVZ Ubuntu templates)'
-	echo '  - webmin                 (Install Webmin for VPS management)'
 	echo '  - test                   (Run the classic disk IO and classic cachefly network test)'
-	echo '  - 3proxy                 (Install 3proxy - Free tiny proxy server, with authentication support, HTTP, SOCKS5 and whatever you can throw at it)'
-	echo '  - 3proxyauth             (add users/passwords to your proxy user authentication list)'
 	echo '  '
 	;;
 esac
