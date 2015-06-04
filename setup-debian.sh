@@ -179,6 +179,7 @@ function install_i2p {
     cd /opt
     git clone https://github.com/i2p/i2p.i2p.git
     cd i2p.i2p
+    git pull
     ant tarball
     cd ..
     tar xvf i2p.i2p/i2p.tar.bz2
