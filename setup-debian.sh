@@ -168,7 +168,7 @@ function install_i2p {
     check_install gettext gettext
     check_install ant ant
     cd /opt
-    chown -R $1 .
+    chown -R $1 /opt
     git clone https://github.com/i2p/i2p.i2p.git
     cd i2p.i2p
     ant tarball
@@ -441,10 +441,10 @@ system)
     config_hostname $1
 
     install_git
-    install_zsh $2
     install_zsh root
+    install_zsh $2
     install_default_jdk
-    install_i2p
+    install_i2p $2
     install_nano
     install_htop
     install_iotop
