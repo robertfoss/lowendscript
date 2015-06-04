@@ -177,7 +177,10 @@ function install_i2p {
     check_install default-jdk default-jdk
     force_install gettext gettext
     check_install ant ant
+
     cd /opt
+    INSTALL_PATH="/opt/i2p"
+
     git clone https://github.com/i2p/i2p.i2p.git
     cd i2p.i2p
     git pull
@@ -185,9 +188,9 @@ function install_i2p {
     ant installer
     trap 'rm $CONFIG; exit' 0 1 2 15
     CONFIG=$(mktemp)
-    INSTALL_PATH="/opt/i2p"
     echo INSTALL_PATH=$INSTALL_PATH > "$CONFIG"
-    java -jar i2pinstall.exe -options "$CONFIG"
+    chmod 666 $CONFIG
+    su "$1" -c "java -jar i2pinstall.exe -options "$CONFIG""
     sed -i "s/\(clientApp.4.startOnLoad\).*/\1=false/g" "$INSTALL_PATH/clients.config"
     sed -i "s/wrapper.java.maxmemory=128/wrapper.java.maxmemory=900/g" "$INSTALL_PATH/wrapper.config"
 
