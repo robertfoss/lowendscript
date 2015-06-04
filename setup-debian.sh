@@ -432,7 +432,6 @@ info)
     ;;
 system)
     fix_locale
-    update_timezone
     remove_unneeded
     update_upgrade
     
