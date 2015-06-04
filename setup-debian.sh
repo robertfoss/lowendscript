@@ -184,7 +184,7 @@ function install_i2p {
     cd ..
     tar xvf i2p.i2p/i2p.tar.bz2
     chown -R $1 /opt
-    sed -i "s/wrapper.java.maxmemory=128/wrapper.java.maxmemory=900/g" wrapper.config
+    sed -i "s/wrapper.java.maxmemory=128/wrapper.java.maxmemory=900/g" /opt/i2p/wrapper.config
     cat > "/home/$1/.i2p/router.config" <<END
 i2np.bandwidth.inboundBurstKBytes=143000
 i2np.bandwidth.inboundBurstKBytesPerSecond=7150
@@ -215,7 +215,6 @@ routerconsole.graphEvents=false
 routerconsole.graphPeriods=131040
 routerconsole.graphPersistent=true
 stat.summaries=bw.recvRate.60000,bw.sendRate.60000,router.memoryUsed.60000,router.activePeers.60000,tunnel.participatingTunnels.60000
-
 END
 
     cat > /etc/rc.local <<END
