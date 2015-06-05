@@ -160,7 +160,7 @@ alias lg="log --graph --pretty=format:'%Cred%h%Creset - %C(bold blue)%an%Creset 
 alias ll="ls -la"
 export TERM=xterm-256color
 END
-    chown "$1" "$USER_HOME/.zshrc"
+    chown "$1" "$USER_DIR/.zshrc"
 }
 
 
