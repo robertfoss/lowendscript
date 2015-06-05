@@ -126,14 +126,16 @@ function install_git {
 
 function install_sshd {
     check_install openssh-server openssh-server
-
-    sed -i "s/#AuthorizedKeysFile/AuthorizedKeysFile/g" wrapper.config
     
-    sed -i "s/#PasswordAuthentication/PasswordAuthentication/g" wrapper.config
-    sed -i "s/PasswordAuthentication yes/PasswordAuthentication no/g" wrapper.config
+    SSHD_CONFIG=/etc/ssh/sshd_config
 
-    sed -i "s/#PermitRootLogin/PermitRootLogin/g" wrapper.config
-    sed -i "s/PermitRootLogin yes/PermitRootLogin no/g" wrapper.config
+    sed -i "s/#AuthorizedKeysFile/AuthorizedKeysFile/g" "$SSHD_CONFIG"
+    
+    sed -i "s/#PasswordAuthentication/PasswordAuthentication/g" "$SSHD_CONFIG"
+    sed -i "s/PasswordAuthentication yes/PasswordAuthentication no/g" "$SSHD_CONFIG"
+
+    sed -i "s/#PermitRootLogin/PermitRootLogin/g" "$SSHD_CONFIG"
+    sed -i "s/PermitRootLogin yes/PermitRootLogin no/g" "$SSHD_CONFIG"
     
     service ssh reload
 }
