@@ -199,7 +199,7 @@ function install_i2p {
     chmod 666 "$CONFIG"
     su "$1" -c "java -jar i2pinstall.jar -options $CONFIG"
 
-    sed -ie "s/#wrapper.java.maxmemory=[0-9]*/wrapper.java.maxmemory=500/g" "$INSTALL_PATH/wrapper.config"
+    sed -ie "s/#wrapper.java.initmemory=[0-9]*/wrapper.java.initmemory=500/g" "$INSTALL_PATH/wrapper.config"
     sed -ie "s/#wrapper.java.maxmemory=[0-9]*/wrapper.java.maxmemory=900/g" "$INSTALL_PATH/wrapper.config"
 
     cp "$INSTALL_PATH/clients.config" "$USER_DIR/.i2p/clients.config"
