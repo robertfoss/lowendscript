@@ -126,6 +126,7 @@ function install_git {
 
 function install_sshd {
     check_install openssh-server openssh-server
+
     sed -i "s/#AuthorizedKeysFile/AuthorizedKeysFile/g" wrapper.config
     
     sed -i "s/#PasswordAuthentication/PasswordAuthentication/g" wrapper.config
@@ -185,12 +186,13 @@ function install_i2p {
     cd i2p.i2p
     git pull
 
-    ant installer
+    ant installer-linux
+    mv i2pinstall*.jar i2pinstall.jar
     trap 'rm $CONFIG; exit' 0 1 2 15
     CONFIG=$(mktemp)
     echo INSTALL_PATH=$INSTALL_PATH > "$CONFIG"
     chmod 666 "$CONFIG"
-    su "$1" -c "java -jar i2pinstall.exe -options $CONFIG"
+    su "$1" -c "java -jar i2pinstall.jar -options $CONFIG"
     sed -i "s/\(clientApp.4.startOnLoad\).*/\1=false/g" "$INSTALL_PATH/clients.config"
     sed -i "s/wrapper.java.maxmemory=128/wrapper.java.maxmemory=900/g" "$INSTALL_PATH/wrapper.config"
 
@@ -246,7 +248,7 @@ function install_iftop {
 function remove_unneeded {
     # Some Debian have portmap installed. We don't need that.
     check_remove /sbin/portmap portmap
-
+    
     # Remove rsyslogd, which allocates ~30MB privvmpages on an OpenVZ system,
     # which might make some low-end VPS inoperatable. We will do this even
     # before running apt-get update.
@@ -257,6 +259,7 @@ function remove_unneeded {
     check_remove /usr/sbin/named 'bind9*'
     check_remove /usr/sbin/smbd 'samba*'
     check_remove /usr/sbin/nscd nscd
+    check_remove /usr/sbin/postfix postfix
 
     # Need to stop sendmail as removing the package does not seem to stop it.
     if [ -f /usr/lib/sm.bin/smtpd ]
