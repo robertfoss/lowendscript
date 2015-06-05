@@ -148,7 +148,8 @@ function install_zsh {
     check_install zsh zsh
     chsh -s /bin/zsh "$1"
     su - "$1" -c "wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O - | sh"
-    cat > "/home/$1/.zshrc" <<END
+    USER_DIR=$( getent passwd "$1" | cut -d: -f6 )
+    cat > "$USER_DIR/.zshrc" <<END
 export ZSH=\$HOME/.oh-my-zsh
 ZSH_THEME="gentoo"
 export UPDATE_ZSH_DAYS=90
@@ -159,6 +160,7 @@ alias lg="log --graph --pretty=format:'%Cred%h%Creset - %C(bold blue)%an%Creset 
 alias ll="ls -la"
 export TERM=xterm-256color
 END
+    chown "$1" "$USER_HOME/.zshrc"
 }
 
 
