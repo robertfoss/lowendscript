@@ -184,6 +184,8 @@ function install_i2p {
     check_install ant ant
 
     cd /opt
+    chown -R "$1" "/opt"
+
     USER_DIR=$( getent passwd "$1" | cut -d: -f6 )
     INSTALL_PATH="/opt/i2p"
 
