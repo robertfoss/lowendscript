@@ -148,7 +148,7 @@ function config_hostname {
 function install_zsh {
     check_install git git
     check_install zsh zsh
-    chsh -s /bin/zsh "$1"
+    chsh -s $(which zsh) "$1"
     su - "$1" -c "wget https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh -O - | sh"
     USER_DIR=$( getent passwd "$1" | cut -d: -f6 )
     cat > "$USER_DIR/.zshrc" <<END
