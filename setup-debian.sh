@@ -465,6 +465,12 @@ test)
 info)
     show_os_arch_version
     ;;
+add_user)
+    add_user "$2" "$3" "$4"
+    ;;
+install_zsh)
+    install_zsh "$2"
+    ;;
 system)
     fix_locale
     remove_unneeded
@@ -494,6 +500,8 @@ system)
     echo '  - system [hostname] [user] [pass] [ssh_pub_key] (remove unneeded, upgrade system, install software)'
     echo '  '
     echo '... and now some extras'
+    echo '  - add_user               (username, password, ssh-pubkey)'
+    echo '  - install_zsh            (username)'
     echo '  - info                   (Displays information about the OS, ARCH and VERSION)'
     echo '  - apt                    (update sources.list for UBUNTU only)'
     echo '  - ps_mem                 (Download the handy python script to report memory usage)'
