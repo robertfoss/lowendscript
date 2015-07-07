@@ -183,6 +183,8 @@ function install_i2p {
     force_install gettext gettext
     check_install ant ant
 
+    export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
+
     cd /opt
     chown -R "$1" "/opt"
 
