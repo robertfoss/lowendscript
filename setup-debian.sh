@@ -141,7 +141,7 @@ function install_sshd {
 }
 
 function config_hostname {
-    echo "$1" >> "/etc/hostname"
+    echo "$1" > "/etc/hostname"
     hostname "$1"
 }
 
